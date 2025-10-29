@@ -10,7 +10,7 @@ import 'package:fulupo/widget/dilogue/dilogue.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SimpleCartBottomSheet extends StatefulWidget {
+class WishlistCartBottomSheet extends StatefulWidget {
   final ProductModel latestProduct;
   final int totalItems;
   final double totalPrice;
@@ -18,9 +18,9 @@ class SimpleCartBottomSheet extends StatefulWidget {
   final List<String> recentProductImages;
   final List<ProductModel> cartItems;
   final Map<String, int> qtyByProductKey;
-  final Function(ProductModel, int) onQuantityChanged; // Add this callback
+  final Function(ProductModel, int) onQuantityChanged;
 
-  const SimpleCartBottomSheet({
+  const WishlistCartBottomSheet({
     Key? key,
     required this.latestProduct,
     required this.totalItems,
@@ -29,14 +29,15 @@ class SimpleCartBottomSheet extends StatefulWidget {
     required this.recentProductImages,
     required this.cartItems,
     required this.qtyByProductKey,
-    required this.onQuantityChanged, // Add this parameter
+    required this.onQuantityChanged,
   }) : super(key: key);
 
   @override
-  State<SimpleCartBottomSheet> createState() => _SimpleCartBottomSheetState();
+  State<WishlistCartBottomSheet> createState() =>
+      _WishlistCartBottomSheetState();
 }
 
-class _SimpleCartBottomSheetState extends State<SimpleCartBottomSheet> {
+class _WishlistCartBottomSheetState extends State<WishlistCartBottomSheet> {
   bool _isExpanded = false;
   GetProvider get getprovider => context.read<GetProvider>();
 
@@ -72,7 +73,7 @@ class _SimpleCartBottomSheetState extends State<SimpleCartBottomSheet> {
             curve: Curves.easeInOut,
             height: _isExpanded
                 ? MediaQuery.of(context).size.height * 0.7
-                : null, // Auto height for collapsed state
+                : null,
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
@@ -150,74 +151,64 @@ class _SimpleCartBottomSheetState extends State<SimpleCartBottomSheet> {
           child: Stack(children: _buildProductImageStack()),
         ),
 
-        const SizedBox(width: 10),
-
-        // Item count and total price
-        // Expanded(
-        //   child: Column(
-        //     crossAxisAlignment: CrossAxisAlignment.start,
-        //     mainAxisSize: MainAxisSize.min,
-        //     children: [
-        //       Text(
-        //         '${widget.totalItems} ${widget.totalItems == 1 ? 'item' : 'items'}',
-        //         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        //       ),
-        //       const SizedBox(height: 2),
-        //       Text(
-        //         '₹${widget.totalPrice.toStringAsFixed(2)}',
-        //         style: TextStyle(
-        //           fontSize: 14,
-        //           fontWeight: FontWeight.bold,
-        //           color: AppColor.fillColor,
-        //         ),
-        //       ),
-        //     ],
-        //   ),
-        // ),
-Expanded(
-  child: Row(
-    children: [
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '${widget.totalItems}',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColor.fillColor,
+        const SizedBox(width: 5),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColor.fillColor.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
             ),
-          ),
-          Text(
-            widget.totalItems == 1 ? 'item' : 'items',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+            child: Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.fillColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${widget.totalItems}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.totalItems == 1 ? 'item' : 'items',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  '₹${widget.totalPrice.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColor.fillColor,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
-     // const Spacer(),
-     
-      Padding(
-        padding: const EdgeInsets.only(left: 50,bottom: 15),
-        child: Text(
-          '₹${widget.totalPrice.toStringAsFixed(2)}',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColor.fillColor,
           ),
         ),
-      ),
-    ],
-  ),
-),
 
-
-
+        const SizedBox(width: 12),
 
         // View cart button
         ElevatedButton(
@@ -262,25 +253,31 @@ Expanded(
               AppRouteName.apppage.push(context, args: 0);
             }
           },
-
           child: const Text('View Cart', style: TextStyle(fontSize: 12)),
         ),
       ],
     );
   }
 
-  // Separated the expanded view to a dedicated method
   Widget _buildExpandedView() {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
-          Text(
-            'Check your Items',
-            style: Styles.textStyleLarge(
-              context,
-            ).copyWith(fontWeight: FontWeight.w600, fontSize: 18),
+          // Title with wishlist context
+          Row(
+            children: [
+              Icon(Icons.favorite, color: Colors.red, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Items from Wishlist',
+                style: Styles.textStyleLarge(context).copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color: AppColor.fillColor,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
@@ -292,7 +289,6 @@ Expanded(
                 final item = widget.cartItems[index];
                 final qty = widget.qtyByProductKey[_productKey(item)] ?? 0;
 
-                // Skip items with zero quantity
                 if (qty <= 0) return const SizedBox.shrink();
 
                 return Padding(
@@ -346,14 +342,51 @@ Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                item.name,
-                                style: Styles.textStyleMedium(context).copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColor.fillColor,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      item.name,
+                                      style: Styles.textStyleMedium(context)
+                                          .copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColor.fillColor,
+                                          ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  // Wishlist indicator
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.favorite,
+                                          size: 12,
+                                          color: Colors.red,
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          'Wishlist',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -392,7 +425,7 @@ Expanded(
                           ),
                         ),
 
-                        // Quantity control - NEW COMPONENT
+                        // Quantity control
                         Container(
                           decoration: BoxDecoration(
                             border: Border.all(
@@ -409,13 +442,22 @@ Expanded(
                                   if (qty > 1) {
                                     widget.onQuantityChanged(item, qty - 1);
                                   } else if (qty == 1) {
-                                    // Show confirmation dialog for removing item
                                     showDialog(
                                       context: context,
                                       builder: (context) => AlertDialog(
-                                        title: Text('Remove Item'),
+                                        title: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.favorite,
+                                              color: Colors.red,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text('Remove from Cart'),
+                                          ],
+                                        ),
                                         content: Text(
-                                          'Remove ${item.name} from cart?',
+                                          'Remove ${item.name} from cart?\n\nNote: This item will remain in your wishlist.',
                                         ),
                                         actions: [
                                           TextButton(
@@ -511,48 +553,74 @@ Expanded(
 
           const SizedBox(height: 16),
 
-          // Cart Summary
+          // Cart Summary with wishlist context
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              gradient: LinearGradient(
+                colors: [
+                  Colors.red.withOpacity(0.1),
+                  Colors.pink.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.withOpacity(0.2), width: 1),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
+                    Icon(Icons.favorite, color: Colors.red, size: 16),
+                    const SizedBox(width: 6),
                     Text(
-                      'Total Items',
-                      style: Styles.textStyleSmall(
-                        context,
-                      ).copyWith(color: Colors.grey[600]),
-                    ),
-                    Text(
-                      '${widget.totalItems}',
-                      style: Styles.textStyleMedium(
-                        context,
-                      ).copyWith(fontWeight: FontWeight.bold),
+                      'Wishlist Items Summary',
+                      style: Styles.textStyleSmall(context).copyWith(
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Total Amount',
-                      style: Styles.textStyleSmall(
-                        context,
-                      ).copyWith(color: Colors.grey[600]),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total Items',
+                          style: Styles.textStyleSmall(
+                            context,
+                          ).copyWith(color: Colors.grey[600]),
+                        ),
+                        Text(
+                          '${widget.totalItems}',
+                          style: Styles.textStyleMedium(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
                     ),
-                    Text(
-                      '₹${widget.totalPrice.toStringAsFixed(2)}',
-                      style: Styles.textStyleLarge(context).copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.fillColor,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'Total Amount',
+                          style: Styles.textStyleSmall(
+                            context,
+                          ).copyWith(color: Colors.grey[600]),
+                        ),
+                        Text(
+                          '₹${widget.totalPrice.toStringAsFixed(2)}',
+                          style: Styles.textStyleLarge(context).copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColor.fillColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -562,7 +630,7 @@ Expanded(
 
           const SizedBox(height: 16),
 
-          // View Full Cart Button
+          // Proceed to Cart Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColor.fillColor,
@@ -573,7 +641,6 @@ Expanded(
               ),
               minimumSize: const Size(double.infinity, 50),
             ),
-
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
               final storeId = prefs.getString(AppConstants.StoreCode) ?? '';
@@ -607,12 +674,18 @@ Expanded(
                 AppRouteName.apppage.push(context, args: 0);
               }
             },
-
-            child: Text(
-              'View Full Cart',
-              style: Styles.textStyleMedium(
-                context,
-              ).copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.shopping_cart, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Proceed to Cart',
+                  style: Styles.textStyleMedium(
+                    context,
+                  ).copyWith(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+              ],
             ),
           ),
         ],
@@ -623,7 +696,6 @@ Expanded(
   List<Widget> _buildProductImageStack() {
     List<Widget> imageWidgets = [];
 
-    // Filter to show only images for products that still exist in cart (qty > 0)
     final validImages = <String>[];
     for (String imgPath in widget.recentProductImages) {
       for (var item in widget.cartItems) {
@@ -637,15 +709,12 @@ Expanded(
       }
     }
 
-    // If nothing valid, return empty
     if (validImages.isEmpty) return imageWidgets;
 
-    // Limit maximum 3 visible
     final displayCount = validImages.length > 3 ? 3 : validImages.length;
 
-    // Reverse order so latest product appears on top/front
     for (int i = displayCount - 1; i >= 0; i--) {
-      final leftOffset = i * 22.0; // overlap spacing
+      final leftOffset = i * 22.0;
 
       imageWidgets.add(
         Positioned(
@@ -665,23 +734,46 @@ Expanded(
               ],
             ),
             child: ClipOval(
-              child: CachedNetworkImage(
-                imageUrl: "${AppConstants.imageBaseUrl}/${validImages[i]}",
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Center(
-                    child: SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 1.5),
+              child: Stack(
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: "${AppConstants.imageBaseUrl}/${validImages[i]}",
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 1.5),
+                        ),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(
+                        Icons.error,
+                        size: 16,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.error, size: 16, color: Colors.grey),
-                ),
+                  // Small heart indicator
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: Icon(Icons.favorite, size: 8, color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -689,7 +781,6 @@ Expanded(
       );
     }
 
-    // Optional "+N" overlay if more than 3 items
     if (validImages.length > 3) {
       imageWidgets.insert(
         0,
@@ -700,7 +791,11 @@ Expanded(
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColor.fillColor,
+              gradient: LinearGradient(
+                colors: [AppColor.fillColor, Colors.red],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               border: Border.all(color: Colors.white, width: 2),
             ),
             child: Center(

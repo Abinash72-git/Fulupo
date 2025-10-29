@@ -17,7 +17,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SaveAddressBottompage extends StatefulWidget {
   final String page;
-  const SaveAddressBottompage({super.key, required this.page});
+  final String name;
+  final String mobile;
+  final String addressType;
+  final String flatHouseNo;
+  final String fullAddress;
+
+  const SaveAddressBottompage({
+    super.key,
+    required this.page,
+    required this.name,
+    required this.mobile,
+    required this.addressType,
+    required this.flatHouseNo,
+    required this.fullAddress,
+  });
 
   @override
   State<SaveAddressBottompage> createState() => _SaveAddressBottompageState();
@@ -46,86 +60,20 @@ class _SaveAddressBottompageState extends State<SaveAddressBottompage> {
   final TextEditingController landmarkController =
       TextEditingController(); // New controller
 
-      gettoken()async{
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        token=prefs.getString(AppConstants.token);
-        log("$token");
-      }
-  getdata() async {
+  gettoken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      // Fetch user details
-      mobile = prefs.getString('NEW_USER_MOBILE') ?? '';
-      name = prefs.getString('NEW_USER_NAME') ?? '';
-
-      // Fetch address type and name
-      selectedAddress =
-          prefs.getString('SELECTED_ADDRESS') ??
-          ''; // This is Home, Work, or Others
-
-      // Get the proper address name based on type
-      if (selectedAddress == 'Others') {
-        // For Others, we need to get the custom name the user entered
-        flatHouseNo = prefs.getString('ADDRESS_TYPE') ?? '';
-        print('🟢 Retrieved custom address name: $flatHouseNo');
-      } else {
-        // For Home/Work, we use the address type itself
-        flatHouseNo = selectedAddress;
-        print('🟢 Using address type as name: $flatHouseNo');
-      }
-
-      // Get the full address and other details
-      _address =
-          prefs.getString(AppConstants.USERADDRESS) ?? 'No address found';
-      landmark = prefs.getString('NEARBY_LANDMARK') ?? '';
-      token = prefs.getString(AppConstants.token) ?? '';
-
-      print('🟢 Retrieved details:');
-      print('🟢 Name: $name');
-      print('🟢 Mobile: $mobile');
-      print('🟢 Address Type: $selectedAddress');
-      print('🟢 Address Name/Type: $flatHouseNo');
-      print('🟢 Full Address: $_address');
-      print('🟢 Landmark: $landmark');
-    });
+    token = prefs.getString(AppConstants.token);
+    log("$token");
   }
 
-  Future<void> _getLocationData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    try {
-      // Retrieve latitude and longitude as doubles
-      double? latitude = prefs.getDouble(AppConstants.USERLATITUTE);
-      double? longitude = prefs.getDouble(AppConstants.USERLONGITUTE);
-      String? address = prefs.getString(AppConstants.USERADDRESS);
-
-      if (latitude != null && longitude != null && address != null) {
-        // Update draggedLatLng with stored values
-        draggedLatLng = LatLng(latitude, longitude);
-
-        setState(() {
-          _address = address; // Update the state with the retrieved address
-        });
-      } else {
-        setState(() {
-          _address = "No address found."; // Update with a default message
-        });
-      }
-    } catch (e) {
-      print('Error retrieving location data: $e');
-      setState(() {
-        _address = "Error retrieving address."; // Update with error message
-      });
-    }
-  }
-
+ 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    getdata();
+
     gettoken();
-    _getLocationData();
+    // _getLocationData();
   }
 
   @override
@@ -137,7 +85,7 @@ class _SaveAddressBottompageState extends State<SaveAddressBottompage> {
       clipBehavior: Clip.none,
       children: [
         Container(
-          height: screenHeight * 0.7, // Height of the bottom sheet
+          height: screenHeight * 0.7,
           width: screenWidth,
           decoration: BoxDecoration(
             color: Colors.grey.shade200,
@@ -197,7 +145,8 @@ class _SaveAddressBottompageState extends State<SaveAddressBottompage> {
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: '${selectedAddress}',
+                                      text:
+                                          '${widget.flatHouseNo?.toUpperCase() ?? ''}',
                                       style: Styles.textStyleMedium(
                                         context,
                                         color: Colors.black,
@@ -214,7 +163,7 @@ class _SaveAddressBottompageState extends State<SaveAddressBottompage> {
                           child: Container(
                             width: screenWidth * 0.6,
                             child: Text(
-                              '${_address}',
+                              '${widget.fullAddress}',
                               style: Styles.textStyleSmall(
                                 context,
                                 color: AppColor.hintTextColor,
@@ -235,14 +184,14 @@ class _SaveAddressBottompageState extends State<SaveAddressBottompage> {
                               SizedBox(width: 15),
                               RichText(
                                 text: TextSpan(
-                                  text: mobile,
+                                  text: widget.mobile,
                                   style: Styles.textStyleMedium(
                                     context,
                                     color: AppColor.hintTextColor,
                                   ),
                                   children: [
                                     TextSpan(
-                                      text: ',  ${name}',
+                                      text: ',  ${widget.name}',
                                       style: Styles.textStyleMedium(
                                         context,
                                         color: Colors.black,
@@ -319,78 +268,87 @@ class _SaveAddressBottompageState extends State<SaveAddressBottompage> {
                         load: () async {
                           SharedPreferences prefs =
                               await SharedPreferences.getInstance();
-                         
 
-                          // Save all relevant details for future reference
-                          await prefs.setString(
-                            'SELECTED_ADDRESS_TYPE',
-                            selectedAddress,
+                          // Get latitude and longitude from temp storage
+                          double? latitude = prefs.getDouble(
+                            AppConstants.TEMP_USERLATITUTE,
                           );
-                          await prefs.setString(
-                            'SELECTED_FLAT_HOUSE_NO',
-                            flatHouseNo,
-                          );
-                          await prefs.setString('SELECTED__ADDRESS', _address);
-                          await prefs.setString('SELECTED_LANDMARK', landmark);
-                          await prefs.setString('SELECTED_MOBILE', mobile);
-                          await prefs.setString(
-                            'SELECTED_USER_NAME',
-                            name ?? '',
+                          double? longitude = prefs.getDouble(
+                            AppConstants.TEMP_USERLONGITUTE,
                           );
 
-                          // Determine what to use for addressType and addAddressName
-                          String apiAddressType =
-                              selectedAddress; // Home, Work, or Others
-                          String apiAddressName =
-                              flatHouseNo; // The custom name or Home/Work
+                          // Save to permanent storage
+                          if (latitude != null && longitude != null) {
+                            await prefs.setDouble(
+                              AppConstants.USERLATITUTE,
+                              latitude,
+                            );
+                            await prefs.setDouble(
+                              AppConstants.USERLONGITUTE,
+                              longitude,
+                            );
+                          }
+await prefs.setString(AppConstants.DEV_USERNAME, widget.name);
+                          // Save address details
+                          await prefs.setString(
+                            AppConstants.ADDRESS_TYPE,
+                            widget.addressType,
+                          );
+                          await prefs.setString(
+                            AppConstants.ADDRESS_NAME,
+                            widget.flatHouseNo,
+                          );
+                          await prefs.setString(
+                            AppConstants.USERADDRESS,
+                            widget.fullAddress,
+                          );
 
-                          // Log the saved details for debugging
-                          print('🟢 Saving to API:');
-                          print('🟢 Name: $name');
-                          print('🟢 Phone: $mobile');
-                          print('🟢 Address: $_address');
-                          print('🟢 Address Type: $apiAddressType');
-                          print('🟢 Address Name: $apiAddressName');
-                          print("Token $token");
+                          log('🟢 Saved address details to SharedPreferences:');
+                          log(
+                            'Address Type: ${widget.addressType}',
+                          ); // Home/Work/Others
+                          log(
+                            'Address Name: ${widget.flatHouseNo}',
+                          ); // Home/Work or custom input
+                          log('Full Address: ${widget.fullAddress}');
 
-                          // Call API with all required data
+                          // Call API with correct data
                           return await getprovider.addAddress(
-                            name: name,
-                            phone: mobile,
+                            name: widget.name,
+                            phone: widget.mobile,
                             token: token.toString(),
-                            address: _address,
-                            addressType: apiAddressType,
-                            addAddressName: apiAddressName,
+                            address: widget.fullAddress,
+                            addressType: widget.addressType, // Home/Work/Others
+                            addAddressName: widget
+                                .flatHouseNo, // Home/Work or flat/house number
                           );
                         },
                         afterComplete: (resp) async {
-                          if (resp.status) {
-                            print("🟢 Address saved successfully to API");
-                            AppRouteName.apppage.push(context,args: 1);
-                            AppDialogue.toast(resp.data);
-                            // if (widget.page == "Cart") {
-                            //   AppRouteName.apppage.push(context, args: 0);
-                            // } else {
-                            //   Navigator.push(
-                            //     context,
-                            //     MaterialPageRoute(
-                            //       builder: (context) => MainHomePage(),
-                            //     ),
-                            //   );
-                            // }
-                            
+                          bool isSuccess =
+                              resp.statusCode == 200 ||
+                              (resp.data is Map &&
+                                  resp.data['message']
+                                          ?.toString()
+                                          .toLowerCase()
+                                          .contains('success') ==
+                                      true);
+
+                          if (isSuccess) {
+                            log("🟢 Address saved successfully");
+                            AppRouteName.apppage.push(context, args: 1);
+                            AppDialogue.toast("Address saved successfully");
                           } else {
-                            print(
-                              "🔴 Error saving address to API: ${resp.data}",
-                            );
+                            log("🔴 Error saving address: ${resp.data}");
+                            AppDialogue.toast("Failed to save address");
                           }
                         },
                       );
                     } on Exception catch (e) {
-                      print("🔴 Exception when saving address: $e");
+                      log("🔴 Exception when saving address: $e");
                       ExceptionHandler.showMessage(context, e);
                     }
                   },
+               
                 ),
                 SizedBox(height: 20),
                 MyButton(

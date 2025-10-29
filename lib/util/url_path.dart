@@ -2,6 +2,7 @@ class UrlPath {
   static const LoginUrl loginUrl = LoginUrl();
   static const GetUrl getUrl = GetUrl();
   static const PostUrl postUrl = PostUrl();
+  static const DeleteUrl deleteUrl=DeleteUrl();
 }
 
 class LoginUrl {
@@ -12,7 +13,7 @@ class LoginUrl {
   //  final String otpVerify = 'farmsVerifyOtp';
 
   final String createProfile = 'farmsAddUser';
-  final String deleteOrderAddress = 'farmsDeleteOrderAddress';
+ // final String deleteOrderAddress = 'farmsDeleteOrderAddress';
   final String addWishlist = 'farmsAddWishlist';
 
   final String updateProfile = 'farmsEditUser';
@@ -29,6 +30,14 @@ class PostUrl {
   final String removeCart = 'consumer/cart/remove';
   //Orders
   final String createOrder='consumer/order/create';
+  final String verifyOrder='consumer/order/verify-payment';
+
+   //Address
+  final String addAddress = 'consumer/address/add';
+  final String removeaddress = 'consumer/address/delete';
+
+  //replacement
+  final String createReplacement ='consumer/exchange/request';
 
 }
 
@@ -40,6 +49,9 @@ class GetUrl {
   final String getAddress='consumer/address/get';
   //carts..
   final String getCart ='consumer/cart/getList';
+
+  //replacement
+  final String getReplacement ='consumer/exchange/customer';
 
   final String updateCart = 'farmsUpdateCart';
   final String addToCart = 'farmsAddToCart';
@@ -70,8 +82,7 @@ class GetUrl {
   //get user
   final String getUser = 'farmsGetUser';
 
-  //Address
-  final String addAddress = 'consumer/address/add';
+
  // final String addAddress = 'farmsAddOrderAddress';
  // final String getAddress = 'farmsGetAllOrderAddress';
 
@@ -101,7 +112,7 @@ class GetUrl {
   final String addBookingOrder = 'farmsAddOrderHistory';
 
   // get order history
-  final String getOrderHistory = 'farmsGetOrderHistory';
+  final String getOrderHistory = 'consumer/order/my-orders';
   //get all subscription
   final String getAllSubscription = 'farmsGetSubscription';
   //get all weekly subscription
@@ -113,3 +124,8 @@ class GetUrl {
   //booking week subscription
   final String bookingWeekSubscription = 'farmsAddWeeklyBooking';
 }
+
+class DeleteUrl {
+  const DeleteUrl();
+    final String deleteAddress='consumer/address/delete';
+  }

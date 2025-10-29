@@ -68,14 +68,14 @@ class _SelectAddressMapState extends State<SelectAddressMap> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     // Store latitude, longitude, and address separately
-    await prefs.setDouble(AppConstants.USERLATITUTE, latitude);
-    await prefs.setDouble(AppConstants.USERLONGITUTE, longitude);
-    await prefs.setString(AppConstants.USERADDRESS, address);
+    await prefs.setDouble(AppConstants.TEMP_USERLATITUTE, latitude);
+    await prefs.setDouble(AppConstants.TEMP_USERLONGITUTE, longitude);
+    await prefs.setString(AppConstants.TEMP_USERADDRESS, address);
 
     // After saving, retrieve and print the saved values to check if they are stored
-    double? storedLatitude = prefs.getDouble(AppConstants.USERLATITUTE);
-    double? storedLongitude = prefs.getDouble(AppConstants.USERLONGITUTE);
-    String? storedAddress = prefs.getString(AppConstants.USERADDRESS);
+    double? storedLatitude = prefs.getDouble(AppConstants.TEMP_USERLATITUTE);
+    double? storedLongitude = prefs.getDouble(AppConstants.TEMP_USERLONGITUTE);
+    String? storedAddress = prefs.getString(AppConstants.TEMP_USERADDRESS);
 
     // Print the stored values for verification
     print('Stored Latitude: $storedLatitude');
@@ -367,7 +367,7 @@ class _SelectAddressMapState extends State<SelectAddressMap> {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                builder: (context) => AddressBottomsheetPage(page: widget.page),
+                builder: (context) => AddressBottomsheetPage(page: widget.page,),
                 // shape: RoundedRectangleBorder(
                 //   borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 // ),

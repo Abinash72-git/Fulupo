@@ -52,28 +52,6 @@ class _SavedAddressListBottomsheetState
 
   UserProvider get _provider => context.read<UserProvider>();
 
-  getdata() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      // Fetch using new keys
-      Delmobile = prefs.getString('NEW_USER_MOBILE') ?? '';
-      Delname = prefs.getString('NEW_USER_NAME') ?? '';
-      selectedAddress = prefs.getString('SELECTED_ADDRESS') ?? '';
-      flatHouseNo =
-          prefs.getString('FLAT_HOUSE_NO') ?? ''; // Fetch flat/house no.
-      landmark = prefs.getString('NEARBY_LANDMARK') ?? ''; // Fetch landmark
-      nameController.text = Delname;
-      mobileController.text = Delmobile;
-      flatHouseNoController.text = flatHouseNo; // Set text for flat/house no.
-      landmarkController.text = landmark; // Set text for landmark
-
-      print(selectedAddress);
-      print(landmark);
-      print(token);
-    });
-    await _getData();
-  }
-
   Future<void> _getLocationData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -124,7 +102,7 @@ class _SavedAddressListBottomsheetState
     super.initState();
     getprovider = context.read<GetProvider>();
     _getLocationData();
-    getdata();
+    _getData();
   }
 
   @override
@@ -240,8 +218,59 @@ class _SavedAddressListBottomsheetState
                           );
                         }
 
+                        // ✅ Show "No address" screen when not loading and empty
                         if (provider.getOrderAddress.isEmpty) {
-                          return Center(child: CircularProgressIndicator());
+                          return Expanded(
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.location_off,
+                                    size: 60,
+                                    color: Colors.grey[500],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    "No saved addresses found",
+                                    style: Styles.textStyleMedium(
+                                      context,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColor.fillColor,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              SelectAddressMap(
+                                                page: widget.page,
+                                                targetPage:
+                                                    SavedAddressListBottomsheet(
+                                                      page: widget.page,
+                                                    ),
+                                              ),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text(
+                                      "Add Address",
+                                      textScaler: TextScaler.linear(1),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
                         }
 
                         return Expanded(
@@ -253,8 +282,8 @@ class _SavedAddressListBottomsheetState
                               final addressId = address.id ?? "";
                               final selectedAddress =
                                   address.addressType ?? "Unknown";
-                              final flatHouseNo = address.addressLine ?? "";
-                              final _address = address.addressType ?? "";
+                              final full_address = address.addressLine ?? "";
+                              final _address_type = address.addressType ?? "";
                               final _addressName = address.addressName ?? "";
                               // final landmark = address.nearbyLandmark ?? "";
                               final Delmobile = address.mobile ?? "N/A";
@@ -265,38 +294,20 @@ class _SavedAddressListBottomsheetState
                                   SharedPreferences prefs =
                                       await SharedPreferences.getInstance();
                                   await prefs.setString(
-                                    AppConstants.ADDRESS_ID,
-                                    addressId,
-                                  );
-                                  log('Saved Address ID: $addressId');
-
-                                  await prefs.setString(
-                                    'SELECTED_ADDRESS_TYPE',
-                                    selectedAddress,
+                                    AppConstants.USERADDRESS,
+                                    full_address,
                                   );
                                   await prefs.setString(
-                                    'SELECTED_FLAT_HOUSE_NO',
-                                    flatHouseNo,
-                                  );
-                                  await prefs.setString(
-                                    'SELECTED_ADDRESS_NAME',
+                                    AppConstants.ADDRESS_NAME,
                                     _addressName,
                                   );
                                   await prefs.setString(
-                                    AppConstants.USERADDRESS,
-                                    _address,
+                                    AppConstants.ADDRESS_TYPE,
+                                    _address_type,
                                   );
                                   await prefs.setString(
-                                    'SELECTED_LANDMARK',
-                                    landmark,
-                                  );
-                                  await prefs.setString(
-                                    'SELECTED_MOBILE',
-                                    Delmobile,
-                                  );
-                                  await prefs.setString(
-                                    'SELECTED_USER_NAME',
-                                    address.name ?? '',
+                                    AppConstants.ADDRESS_ID,
+                                    addressId,
                                   );
 
                                   // Log the saved details for debugging
@@ -390,15 +401,17 @@ class _SavedAddressListBottomsheetState
                                                           );
                                                         }
                                                       },
-                                                      afterComplete:
-                                                          (resp) async {
-                                                            if (resp.status) {
-                                                              print("Success");
-                                                              AppDialogue.toast(
-                                                                resp.data,
-                                                              );
-                                                            }
-                                                          },
+                                                      afterComplete: (resp) async {
+                                                        if (resp.status ||
+                                                            resp.statusCode ==
+                                                                200) {
+                                                          print("Success ✅");
+                                                          AppDialogue.toast(
+                                                            resp.fullBody['message'] ??
+                                                                "Address deleted successfully",
+                                                          );
+                                                        }
+                                                      },
                                                     );
                                                   } catch (e) {
                                                     ExceptionHandler.showMessage(
@@ -419,8 +432,7 @@ class _SavedAddressListBottomsheetState
                                                     ? Icons.home
                                                     : selectedAddress == 'Work'
                                                     ? Icons.work
-                                                    : selectedAddress ==
-                                                          'Others'
+                                                    : selectedAddress == 'Other'
                                                     ? Icons.hotel_rounded
                                                     : Icons.location_on,
                                                 color: AppColor.fillColor,
@@ -451,10 +463,10 @@ class _SavedAddressListBottomsheetState
                                               left: 45,
                                             ),
                                             child: Text(
-                                              _address.isEmpty &&
-                                                      flatHouseNo.isEmpty
+                                              full_address.isEmpty &&
+                                                      _address_type.isEmpty
                                                   ? 'No address is added'
-                                                  : '$flatHouseNo',
+                                                  : '$full_address',
                                               style: Styles.textStyleSmall(
                                                 context,
                                                 color: AppColor.hintTextColor,

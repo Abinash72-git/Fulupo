@@ -10,7 +10,7 @@ import 'package:fulupo/model/getAll_categeory/getAll_category_model.dart';
 import 'package:fulupo/model/product_base_model.dart';
 import 'package:fulupo/pages/bottom_sheet/product_category_page.dart';
 import 'package:fulupo/pages/bottom_sheet/simplecartbottom_sheet.dart';
-import 'package:fulupo/pages/bottom_sheet_page.dart';
+
 import 'package:fulupo/pages/custom_drawar.dart';
 import 'package:fulupo/pages/gridview/gridview_page.dart';
 import 'package:fulupo/pages/homepageWidgets.dart/productcard.dart';
@@ -32,14 +32,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-class HomePage2 extends StatefulWidget {
-  const HomePage2({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<HomePage2> createState() => _HomePage2State();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePage2State extends State<HomePage2> {
+class _HomePageState extends State<HomePage> {
   String _address = "Loading...";
 
   LatLng draggedLatLng = LatLng(0.0, 0.0);
@@ -65,11 +65,13 @@ class _HomePage2State extends State<HomePage2> {
   Map<String, bool> isFavorite = {};
   Map<String, bool> isAdded = {};
   Map<String, Timer?> _debounceTimers = {};
-  String selectedAddress = '';
+
   int selectedCategoryIndex = 0;
   final ScrollController _categoryScrollController = ScrollController();
   final ScrollController _productScrollController = ScrollController();
-  String selectedAddressName = '';
+
+  String address_Type = '';
+  String AddressName = "";
   // A stable per-product quantity map kept at page level
   final Map<String, int> _qtyByProductKey = {};
   String _productKey(ProductModel p) => '${p.name}|${p.productImage}';
@@ -78,11 +80,13 @@ class _HomePage2State extends State<HomePage2> {
   List<ProductModel> _cartItems = [];
   List<String> _recentProductImages = []; // For product image stack
   double _cartTotalPrice = 0.0;
+  int _totalCartItems = 0; 
 
   PersistentBottomSheetController? _persistentBottomSheetController;
   bool _isBottomSheetOpen = false;
   // Add a product to cart
-  void _addToCart(ProductModel product, int quantity) {
+
+ void _addToCart(ProductModel product, int quantity) {
   setState(() {
     // Check if product already exists in cart
     bool productExists = false;
@@ -106,7 +110,7 @@ class _HomePage2State extends State<HomePage2> {
     for (var item in _cartItems) {
       final keyStr = _productKey(item);
       final qty = _qtyByProductKey[keyStr] ?? 0;
-      
+
       // Only add images for items with quantity > 0
       if (qty > 0 && !_recentProductImages.contains(item.productImage)) {
         _recentProductImages.add(item.productImage);
@@ -114,7 +118,7 @@ class _HomePage2State extends State<HomePage2> {
       }
     }
 
-    // Recalculate cart total
+    // ✅ FIX: Recalculate cart total BEFORE showing bottom sheet
     _updateCartTotal();
   });
 
@@ -126,85 +130,124 @@ class _HomePage2State extends State<HomePage2> {
   }
 }
 
+  // void _addToCart(ProductModel product, int quantity) {
+  //   setState(() {
+  //     // Check if product already exists in cart
+  //     bool productExists = false;
+
+  //     // Update quantity if product exists
+  //     for (var i = 0; i < _cartItems.length; i++) {
+  //       if (_cartItems[i].id == product.id) {
+  //         _cartItems[i] = product;
+  //         productExists = true;
+  //         break;
+  //       }
+  //     }
+
+  //     // Add product if it doesn't exist
+  //     if (!productExists) {
+  //       _cartItems.add(product);
+  //     }
+
+  //     // CRITICAL FIX: Rebuild recent images properly
+  //     _recentProductImages.clear();
+  //     for (var item in _cartItems) {
+  //       final keyStr = _productKey(item);
+  //       final qty = _qtyByProductKey[keyStr] ?? 0;
+
+  //       // Only add images for items with quantity > 0
+  //       if (qty > 0 && !_recentProductImages.contains(item.productImage)) {
+  //         _recentProductImages.add(item.productImage);
+  //         if (_recentProductImages.length >= 3) break;
+  //       }
+  //     }
+
+  //     // Recalculate cart total
+  //     _updateCartTotal();
+  //   });
+
+  //   // Show the cart bottom sheet if it's not already showing
+  //   if (!_isBottomSheetOpen) {
+  //     _showSimpleCartBottomSheet(product);
+  //   } else {
+  //     _updateCartBottomSheet();
+  //   }
+  // }
+
   void _updateCartTotal() {
-  double total = 0.0;
-  int itemCount = 0;
+    double total = 0.0;
+    int itemCount = 0;
 
-  // CRITICAL FIX: Clean up _cartItems to only include items with qty > 0
-  _cartItems.removeWhere((item) {
-    final keyStr = _productKey(item);
-    final qty = _qtyByProductKey[keyStr] ?? 0;
-    return qty <= 0;
-  });
+    // CRITICAL FIX: Clean up _cartItems to only include items with qty > 0
+    _cartItems.removeWhere((item) {
+      final keyStr = _productKey(item);
+      final qty = _qtyByProductKey[keyStr] ?? 0;
+      return qty <= 0;
+    });
 
-  // Calculate total from _qtyByProductKey
-  for (var entry in _qtyByProductKey.entries) {
-    ProductModel? product;
-    for (var category in visibleCategories) {
-      for (var p in category.products) {
-        if (_productKey(p) == entry.key) {
-          product = p;
-          break;
-        }
-      }
-      if (product != null) break;
-    }
-
-    if (product != null) {
-      total += product.mrpPrice * entry.value;
-      itemCount += entry.value;
-    }
-  }
-
-  setState(() {
-    _cartTotalPrice = total;
-  });
-
-  // CRITICAL FIX: Rebuild recent images after cleanup
-  _recentProductImages.clear();
-  for (var item in _cartItems) {
-    final qty = _qtyByProductKey[_productKey(item)] ?? 0;
-    if (qty > 0 && !_recentProductImages.contains(item.productImage)) {
-      _recentProductImages.add(item.productImage);
-      if (_recentProductImages.length >= 3) break;
-    }
-  }
-
-  // Check if we need to show, update, or close the bottom sheet
-  if (itemCount > 0) {
-    if (!_isBottomSheetOpen) {
-      ProductModel? firstProduct;
+    // Calculate total from _qtyByProductKey
+    for (var entry in _qtyByProductKey.entries) {
+      ProductModel? product;
       for (var category in visibleCategories) {
         for (var p in category.products) {
-          final qty = _qtyByProductKey[_productKey(p)] ?? 0;
-          if (qty > 0) {
-            firstProduct = p;
+          if (_productKey(p) == entry.key) {
+            product = p;
             break;
           }
         }
-        if (firstProduct != null) break;
+        if (product != null) break;
       }
 
-      if (firstProduct != null) {
-        _showSimpleCartBottomSheet(firstProduct);
+      if (product != null) {
+        total += product.mrpPrice * entry.value;
+        itemCount += entry.value;
       }
-    } else {
-      _updateCartBottomSheet();
     }
-  } else if (_isBottomSheetOpen) {
-    _persistentBottomSheetController?.close();
-  }
-}
-  // Show the simplified cart bottom sheet
- void _showSimpleCartBottomSheet(ProductModel latestProduct) {
-  // Calculate total items in cart
-  int totalItems = 0;
-  for (var qty in _qtyByProductKey.values) {
-    totalItems += qty;
+
+    setState(() {
+      _cartTotalPrice = total;
+       _totalCartItems = itemCount;
+    });
+
+    // CRITICAL FIX: Rebuild recent images after cleanup
+    _recentProductImages.clear();
+    for (var item in _cartItems) {
+      final qty = _qtyByProductKey[_productKey(item)] ?? 0;
+      if (qty > 0 && !_recentProductImages.contains(item.productImage)) {
+        _recentProductImages.add(item.productImage);
+        if (_recentProductImages.length >= 3) break;
+      }
+    }
+
+    // Check if we need to show, update, or close the bottom sheet
+    if (itemCount > 0) {
+      if (!_isBottomSheetOpen) {
+        ProductModel? firstProduct;
+        for (var category in visibleCategories) {
+          for (var p in category.products) {
+            final qty = _qtyByProductKey[_productKey(p)] ?? 0;
+            if (qty > 0) {
+              firstProduct = p;
+              break;
+            }
+          }
+          if (firstProduct != null) break;
+        }
+
+        if (firstProduct != null) {
+          _showSimpleCartBottomSheet(firstProduct);
+        }
+      } else {
+        _updateCartBottomSheet();
+      }
+    } else if (_isBottomSheetOpen) {
+      _persistentBottomSheetController?.close();
+    }
   }
 
-  // No need to show if there are no items
-  if (totalItems == 0) {
+ void _showSimpleCartBottomSheet(ProductModel latestProduct) {
+  // Use the class variable _totalCartItems instead of recalculating
+  if (_totalCartItems == 0) {
     // If bottom sheet is open, close it
     if (_isBottomSheetOpen && _persistentBottomSheetController != null) {
       _persistentBottomSheetController!.close();
@@ -219,11 +262,11 @@ class _HomePage2State extends State<HomePage2> {
   for (var item in _cartItems) {
     final keyStr = _productKey(item);
     final qty = _qtyByProductKey[keyStr] ?? 0;
-    
+
     // Only add images for items that still have quantity > 0
     if (qty > 0 && !_recentProductImages.contains(item.productImage)) {
       _recentProductImages.add(item.productImage);
-      
+
       // Limit to 3 images
       if (_recentProductImages.length >= 3) break;
     }
@@ -242,7 +285,7 @@ class _HomePage2State extends State<HomePage2> {
     (BuildContext context) {
       return SimpleCartBottomSheet(
         latestProduct: latestProduct,
-        totalItems: totalItems,
+        totalItems: _totalCartItems, // ✅ USE CLASS VARIABLE
         totalPrice: _cartTotalPrice,
         recentProductImages: _recentProductImages,
         cartItems: _cartItems,
@@ -252,19 +295,18 @@ class _HomePage2State extends State<HomePage2> {
         },
         onQuantityChanged: (product, newQuantity) {
           final keyStr = _productKey(product);
-          
+
           setState(() {
             if (newQuantity <= 0) {
               _qtyByProductKey.remove(keyStr);
-              
-              // Remove from cart items
               _cartItems.removeWhere((item) => _productKey(item) == keyStr);
-              
+
               // CRITICAL FIX: Rebuild recent images from remaining cart items
               _recentProductImages.clear();
               for (var item in _cartItems) {
                 final qty = _qtyByProductKey[_productKey(item)] ?? 0;
-                if (qty > 0 && !_recentProductImages.contains(item.productImage)) {
+                if (qty > 0 &&
+                    !_recentProductImages.contains(item.productImage)) {
                   _recentProductImages.add(item.productImage);
                   if (_recentProductImages.length >= 3) break;
                 }
@@ -272,10 +314,10 @@ class _HomePage2State extends State<HomePage2> {
             } else {
               _qtyByProductKey[keyStr] = newQuantity;
             }
-            
+
             // Update cart total
             _updateCartTotal();
-            
+
             // If cart is now empty, close the sheet
             if (_qtyByProductKey.isEmpty) {
               _persistentBottomSheetController?.close();
@@ -298,8 +340,6 @@ class _HomePage2State extends State<HomePage2> {
     setState(() {});
   });
 }
-
-
 
   void _updateCartBottomSheet() {
     if (_isBottomSheetOpen && _persistentBottomSheetController != null) {
@@ -367,10 +407,60 @@ class _HomePage2State extends State<HomePage2> {
     );
   }
 
+  Future<void> _checkIfLocationSaved() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lat = prefs.getDouble(AppConstants.USERLATITUTE);
+    final lng = prefs.getDouble(AppConstants.USERLONGITUTE);
+    final address = prefs.getString(AppConstants.USERADDRESS);
+
+  if (address == null || address.isEmpty) {
+      if (!mounted) return;
+
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          title: const Text("Set Delivery Address"),
+          content: const Text(
+            "We need your location to show stores and deliver products nearby. Please add your address.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColor.fillColor,
+              ),
+              onPressed: () async {
+                Navigator.pop(context); // close dialog
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const SavedAddressListBottomsheet(page: 'Home'),
+                  ),
+                );
+                if (result == "Yes") {
+                  await _getLocationData();
+                }
+              },
+              child: const Text("Add Address"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _getLocationData();
+    _getLocationData().then((_) => _checkIfLocationSaved());
     _loadWishlistData();
 
     _scrollController.addListener(() {
@@ -453,36 +543,42 @@ class _HomePage2State extends State<HomePage2> {
 
       // Get all address components
       String? address = prefs.getString(AppConstants.USERADDRESS);
-      String? flatHouseNo = prefs.getString('SELECTED_FLAT_HOUSE_NO') ?? '';
+
+      // Get address type and name
+      String? addressType = prefs.getString(AppConstants.ADDRESS_TYPE);
+      String? addressName = prefs.getString(AppConstants.ADDRESS_NAME);
 
       token = prefs.getString('token') ?? '';
-      selectedAddress = prefs.getString('SELECTED_ADDRESS_TYPE') ?? '';
-      selectedAddressName = prefs.getString('SELECTED_ADDRESS_NAME') ?? '';
 
-      // Format the address to include flat/house number
-      if (flatHouseNo.isNotEmpty && address != null) {
-        address = "$flatHouseNo, $address";
-      }
+      // Set class variables
+      setState(() {
+        this.address_Type = addressType ?? '';
+        this.AddressName = addressName ?? '';
+
+        // if (latitude != null && longitude != null && address != null) {
+        //   draggedLatLng = LatLng(latitude, longitude);
+        //   _address = address;
+        // }
+        if (address !=null) {
+          _address = address;
+        }
+         else {
+          _address = "No address found.";
+        }
+      });
 
       log('Token: $token');
-      log('Selected Address Type: $selectedAddress');
-      log('Selected Address Name: $selectedAddressName');
+      log('latitude : $latitude');
+      log('longitude : $longitude');
       log('Full Address: $address');
-
-      if (latitude != null && longitude != null && address != null) {
-        draggedLatLng = LatLng(latitude, longitude);
-        setState(() {
-          _address = address!;
-        });
-      } else {
-        setState(() {
-          _address = "No address found.";
-        });
-      }
+      log('Adress_Type: $addressType');
+      log('Address Name: $addressName');
     } catch (e) {
       log('Error retrieving location data: $e');
       setState(() {
         _address = "Error retrieving address.";
+        address_Type = '';
+        AddressName = '';
       });
     }
   }
@@ -614,258 +710,322 @@ class _HomePage2State extends State<HomePage2> {
     await prefs.setString(AppConstants.USERADDRESS, address);
   }
 
- @override
-Widget build(BuildContext context) {
-  final screenHeight = MediaQuery.of(context).size.height;
-  final screenWidth = MediaQuery.of(context).size.width;
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-  return Scaffold(
-    key: _scaffoldKey,
-    drawer: CustomDrawer(
-      screenHeight: screenHeight,
-      screenWidth: screenWidth,
-    ),
-    onDrawerChanged: (isOpened) async {
-      if (!isOpened) {
-        log("Drawer is closed");
-        await recalculateTotalPrice();
-        await _loadWishlistData();
-      }
-    },
-    body: Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage("assets/images/bg.jpg"),
-          fit: BoxFit.cover,
-        ),
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: CustomDrawer(
+        screenHeight: screenHeight,
+        screenWidth: screenWidth,
       ),
-      child: RefreshIndicator(
-        onRefresh: () async {
-          await _getLocationData();
-        },
-        color: AppColor.fillColor,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            // Add padding to the bottom to account for the bottom sheet
-            padding: EdgeInsets.only(
-              bottom: _isBottomSheetOpen ? 80.0 : 16.0, // Add padding when bottom sheet is open
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 10,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section
-                  _buildHeader(),
-
-                  SizedBox(height: 20),
-
-                  // Search Bar
-                  _buildSearchBar(), 
-                  SizedBox(height: 20),
-                  if (getprovider.banner.isNotEmpty)
-                    CarouselSlider(
-                      options: CarouselOptions(
-                        autoPlay: false,
-                        height: screenHeight * 0.16,
-                        autoPlayInterval: const Duration(seconds: 5),
-                        viewportFraction: 1,
-                        enlargeCenterPage: true,
-                        aspectRatio: 200,
-                        onPageChanged: (index, reason) {
-                          setState(() {
-                            myCurrentIndex = index;
-                          });
-                        },
-                      ),
-                      items: getprovider.banner.map((banner) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: CachedNetworkImage(
-                            imageUrl: banner.Image ?? '',
-                            width: screenWidth * 0.9,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            errorWidget: (context, url, error) => const Icon(
-                              Icons.error,
-                              color: Colors.red,
-                              size: 50,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    )
-                  else
-                    // 🔸 Default banner when API returns nothing
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(
-                        'assets/images/vegitable.jpg', // ✅ your default asset
-                        height: screenHeight * 0.14,
-                        width: screenWidth * 0.9,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-
-                  SizedBox(height: 20),
-
-                  // 🔼 Carousel Dots
-                  Center(
-                    child: AnimatedSmoothIndicator(
-                      activeIndex: myCurrentIndex,
-                      count: getprovider.banner.isNotEmpty
-                          ? getprovider.banner.length
-                          : 1,
-                      effect: const JumpingDotEffect(
-                        dotHeight: 5,
-                        dotWidth: 5,
-                        spacing: 5,
-                        dotColor: Color.fromARGB(255, 172, 171, 171),
-                        activeDotColor: AppColor.whiteColor,
-                        paintStyle: PaintingStyle.fill,
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 20),
-                  Center(
-                    child: Text(
-                      'Shop by Category',
-                      style: Styles.textStyleLarge(
-                        context,
-                        color: AppColor.yellowColor,
-                      ),
-                      textScaler: TextScaler.linear(1),
-                    ),
-                  ),
-                  // Category Slider
-                  _buildCategorySliderAlternative(context),
-
-                  SizedBox(height: 20),
-                  // Product Grid
-                  _buildProductGrid(),
-                  
-                  // Add extra space at the bottom when bottom sheet is open
-                  if (_isBottomSheetOpen)
-                    SizedBox(height: 40),
-                ],
-              ),
-            ),
+      onDrawerChanged: (isOpened) async {
+        if (!isOpened) {
+          log("Drawer is closed");
+          await recalculateTotalPrice();
+          await _loadWishlistData();
+        }
+      },
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage("assets/images/bg.jpg"),
+            fit: BoxFit.cover,
           ),
         ),
-      ),
-    ),
-  );
-}
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => _scaffoldKey.currentState?.openDrawer(),
-            child: const Icon(Icons.menu, color: AppColor.whiteColor, size: 30),
-          ),
-          SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await _getLocationData();
+          },
+          color: AppColor.fillColor,
+          child: SafeArea(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              // Add padding to the bottom to account for the bottom sheet
+              padding: EdgeInsets.only(
+                bottom: _isBottomSheetOpen
+                    ? 80.0
+                    : 16.0, // Add padding when bottom sheet is open
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(_getAddressIcon(), color: Colors.red),
-                    SizedBox(width: 10),
-                    Flexible(
-                      child: GestureDetector(
-                        onTap: () async {
-                          final val = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const SavedAddressListBottomsheet(
-                                    page: 'Home',
-                                  ),
+                    // Header Section
+                    _buildHeader(),
+
+                    SizedBox(height: 20),
+
+                    // Search Bar
+                    _buildSearchBar(),
+                    SizedBox(height: 20),
+
+            
+                    if (getprovider.banner.isNotEmpty)
+                      CarouselSlider(
+                        options: CarouselOptions(
+                          autoPlay: true, // Changed to true for default banners
+                          height: screenHeight * 0.16,
+                          autoPlayInterval: const Duration(seconds: 5),
+                          viewportFraction: 1,
+                          enlargeCenterPage: true,
+                          aspectRatio: 200,
+                          onPageChanged: (index, reason) {
+                            setState(() {
+                              myCurrentIndex = index;
+                            });
+                          },
+                        ),
+                        items: getprovider.banner.map((banner) {
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: CachedNetworkImage(
+                              imageUrl: banner.Image ?? '',
+                              width: screenWidth * 0.9,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                              errorWidget: (context, url, error) => const Icon(
+                                Icons.error,
+                                color: Colors.red,
+                                size: 50,
+                              ),
                             ),
                           );
-                          if (val == "Yes") {
-                            _getLocationData();
-                          }
-                        },
-                        child: Text(
-                          // ✅ Show custom name if available, otherwise show type
-                          selectedAddressName.isEmpty
-                              ? (selectedAddress.isEmpty
-                                    ? "Select Address"
-                                    : selectedAddress)
-                              : selectedAddressName,
-                          style: Styles.textStyleMedium(
-                            context,
-                            color: AppColor.yellowColor,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        }).toList(),
+                      )
+                    else
+                      // 🔸 Default banners when API returns nothing
+                      CarouselSlider(
+                        options: CarouselOptions(
+                          autoPlay: true,
+                          height: screenHeight * 0.12,
+                          autoPlayInterval: const Duration(seconds: 3),
+                          viewportFraction: 1,
+                          enlargeCenterPage: true,
+                          aspectRatio: 200,
+                          onPageChanged: (index, reason) {
+                            setState(() {
+                              myCurrentIndex = index;
+                            });
+                          },
+                        ),
+                        items:
+                            [
+                              'assets/images/veges.png',
+                              'assets/images/pre.jpg',
+                              'assets/images/frutis.jpg',
+                              'assets/images/monthly.jpg',
+                              'assets/images/biscuitsBanner.jpg',
+                            ].map((imagePath) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.asset(
+                                  imagePath,
+                                  height: screenHeight * 0.16,
+                                  width: screenWidth * 0.92,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback to first image if asset not found
+                                    return Image.asset(
+                                      'assets/images/veges.png',
+                                      height: screenHeight * 0.16,
+                                      width: screenWidth * 0.9,
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                      ),
+
+                    SizedBox(height: 20),
+
+                    // 🔼 Carousel Dots - Update to handle both cases
+                    Center(
+                      child: AnimatedSmoothIndicator(
+                        activeIndex: myCurrentIndex,
+                        count: getprovider.banner.isNotEmpty
+                            ? getprovider.banner.length
+                            : 5, // Number of default images
+                        effect: const JumpingDotEffect(
+                          dotHeight: 5,
+                          dotWidth: 5,
+                          spacing: 5,
+                          dotColor: Color.fromARGB(255, 172, 171, 171),
+                          activeDotColor: AppColor.whiteColor,
+                          paintStyle: PaintingStyle.fill,
                         ),
                       ),
                     ),
-                    SizedBox(width: 5),
-                    Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 35,
-                      color: Colors.black,
+
+                    SizedBox(height: 20),
+                    Center(
+                      child: Text(
+                        'Shop by Category',
+                        style: Styles.textStyleLarge(
+                          context,
+                          color: AppColor.yellowColor,
+                        ),
+                        textScaler: TextScaler.linear(1),
+                      ),
                     ),
+                    // Category Slider
+                    _buildCategorySliderAlternative(context),
+
+                    SizedBox(height: 20),
+                    // Product Grid
+                    _buildProductGrid(),
+
+                    // Add extra space at the bottom when bottom sheet is open
+                    if (_isBottomSheetOpen) SizedBox(height: 40),
                   ],
                 ),
-                Container(
-                  width: MediaQuery.of(context).size.width * 0.6,
-                  child: Text(
-                    _address, // This now contains the complete formatted address
-                    style: Styles.textStyleSmall(
-                      context,
-                      color: AppColor.whiteColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2, // Allow 2 lines for better display
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfilePage()),
-              );
-            },
-            child: Icon(
-              Icons.person_2_rounded,
-              color: AppColor.whiteColor,
-              size: 30,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  IconData _getAddressIcon() {
-    if (selectedAddress.isEmpty || selectedAddress == 'Home') {
-      return Icons.home;
-    } else if (selectedAddress == 'Work') {
-      return Icons.work;
-    } else if (selectedAddress == 'Others') {
-      return Icons.hotel_rounded;
-    } else {
-      return Icons.location_on;
-    }
+
+
+  Widget _buildHeader() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 5),
+    child: Row(
+      children: [
+        GestureDetector(
+          onTap: () => _scaffoldKey.currentState?.openDrawer(),
+          child: const Icon(Icons.menu, color: AppColor.whiteColor, size: 30),
+        ),
+        SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(_getAddressIcon(), color: Colors.red),
+                  SizedBox(width: 10),
+                  Flexible(
+                    child: GestureDetector(
+                      onTap: () async {
+                        final val = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const SavedAddressListBottomsheet(
+                                  page: 'Home',
+                                ),
+                          ),
+                        );
+                        if (val == "Yes") {
+                          _getLocationData();
+                        }
+                      },
+                      child: Text(
+                        // First try to show AddressName, then address_Type, then fallback to "Select Address"
+                        AddressName.isNotEmpty 
+                            ? AddressName 
+                            : (address_Type.isNotEmpty 
+                                ? address_Type 
+                                : "Select Address"),
+                        style: Styles.textStyleMedium(
+                          context,
+                          color: AppColor.yellowColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 5),
+                  GestureDetector( onTap: () async {
+                        final val = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                const SavedAddressListBottomsheet(
+                                  page: 'Home',
+                                ),
+                          ),
+                        );
+                        if (val == "Yes") {
+                          _getLocationData();
+                        }
+                      },
+                    child: Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 35,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: MediaQuery.of(context).size.width * 0.6,
+                child: Text(
+                  _address, // Full formatted address
+                  style: Styles.textStyleSmall(
+                    context,
+                    color: AppColor.whiteColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2, // Allow 2 lines for better display
+                ),
+              ),
+            ],
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ProfilePage()),
+            );
+          },
+          child: Icon(
+            Icons.person_2_rounded,
+            color: AppColor.whiteColor,
+            size: 30,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+IconData _getAddressIcon() {
+
+  if (address_Type.trim().isEmpty) {
+    return Icons.location_on;
   }
+  
+  final lowerType = address_Type.toLowerCase().trim();
+  
+  switch (lowerType) {
+    case 'home':
+      return Icons.home;
+    case 'work':
+      return Icons.work;
+    case 'other':
+      return Icons.hotel_rounded;
+    default:
+      return Icons.location_on;
+  }
+}
+
 
   Widget _buildSearchBar() {
     return Container(
@@ -1087,51 +1247,16 @@ Widget build(BuildContext context) {
             _showFullCartBottomSheet(); // Show the full cart view
           },
         );
-        
       },
     );
   }
 
-  void _showCartBottomSheet() {
-    // Implement your existing cart bottom sheet or navigation to cart page
-    // This is just a placeholder
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        height: 300,
-        child: Column(
-          children: [
-            Text('Your Cart', style: Styles.textStyleLarge(context)),
-            // Add your cart items list here
-            Expanded(
-              child: Center(
-                child: Text(
-                  'Cart items will be displayed here',
-                  style: Styles.textStyleMedium(context),
-                ),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.fillColor,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Proceed to Checkout'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   List<GetAllCategoryModel> allCategories = [];
   List<GetAllCategoryModel> visibleCategories = [];
   int currentIndex = 2;
   bool isLoading = true;
+
 
   Future<void> fetchCategories() async {
     final prefs = await SharedPreferences.getInstance();
@@ -1156,12 +1281,50 @@ Widget build(BuildContext context) {
       if (!mounted) return;
 
       final cats = List<GetAllCategoryModel>.from(getprovider.category ?? []);
+
+      log('Total categories: ${cats.length}');
+
+      // Find first category with products
+      int categoryIndexWithProducts = -1;
+      for (int i = 0; i < cats.length; i++) {
+        log('${cats[i].categoryName}: ${cats[i].products.length} products');
+        if (cats[i].products.isNotEmpty && categoryIndexWithProducts == -1) {
+          categoryIndexWithProducts = i;
+        }
+      }
+
       setState(() {
         allCategories = cats;
-        visibleCategories = cats.length >= 10
-            ? cats.take(10).toList()
-            : List.from(cats);
+        // Show ALL categories, not filtering by products
+        visibleCategories = cats;
+
+        // IMPORTANT: Set the selected category index BEFORE setting isLoading to false
+        // This ensures the UI will show this category first
+        if (categoryIndexWithProducts != -1) {
+          selectedCategoryIndex = categoryIndexWithProducts;
+          log(
+            'Setting initial category to ${cats[categoryIndexWithProducts].categoryName} at index $categoryIndexWithProducts',
+          );
+        } else {
+          selectedCategoryIndex = 0;
+          log(
+            'No categories with products found, defaulting to first category',
+          );
+        }
+
         isLoading = false;
+      });
+
+      // Scroll to the selected category once UI is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_categoryScrollController.hasClients && selectedCategoryIndex > 0) {
+          _categoryScrollController.animateTo(
+            selectedCategoryIndex *
+                96.0, // Assuming each item takes 96 logical pixels
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
       });
 
       _handleIndexChange();

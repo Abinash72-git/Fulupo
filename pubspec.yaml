@@ -50,7 +50,7 @@ dependencies:
   smooth_page_indicator: ^1.2.1
   geocoding: ^4.0.0
   geolocator: ^14.0.2
-  fancy_bottom_navigation: ^0.3.3
+  fancy_bottom_navigation_2: ^0.3.5
   unicons: ^3.0.0
   cached_network_image: ^3.4.1
   carousel_slider: ^5.1.1
@@ -61,7 +61,11 @@ dependencies:
   connectivity_plus: ^6.1.5
   internet_connection_checker_plus: ^2.7.2
   keyboard_actions: ^4.2.0
-
+  razorpay_flutter: ^1.4.0
+  image_picker: ^1.2.0
+  mime: ^2.0.0
+  permission_handler: ^11.3.1
+  file_picker: ^10.3.3
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +77,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

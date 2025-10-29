@@ -1,70 +1,136 @@
-class GetOrderHistory {
-  final String? orderId;
-  final String? userId;
-  final String? subcategoryId;
-  final int? count;
-  final DateTime? bookingDate;
-  final String? slotSchedule;
-  final String? startTime;
-  final String? endTime;
-  final double? oldPrice;
-  final double? savings;
-  final double? gst;
-  final double? deliveryFees;
-  final double? totalPay;
-  final String? productName;
-  final String? productSubname;
-  final String? productQuantity;
-  final double? currentPrice;
-  final String? orderAddress;
-  final String? image;
+class OrderItem {
+  final String? productId;
+  final String? name;
+  final int? quantity;
+  final double? price;
+  final double? total;
+  final String? id;
 
-  GetOrderHistory({
-    this.orderId,
-    this.userId,
-    this.subcategoryId,
-    this.count,
-    this.bookingDate,
-    this.slotSchedule,
-    this.startTime,
-    this.endTime,
-    this.oldPrice,
-    this.savings,
-    this.gst,
-    this.deliveryFees,
-    this.totalPay,
-    this.productName,
-    this.productSubname,
-    this.productQuantity,
-    this.currentPrice,
-    this.orderAddress,
-    this.image,
+  OrderItem({
+    this.productId,
+    this.name,
+    this.quantity,
+    this.price,
+    this.total,
+    this.id,
   });
 
-  // Factory method to create an instance from JSON
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
+    return OrderItem(
+      productId: json['productId'],
+      name: json['name'],
+      quantity: json['quantity'],
+      price: json['price']?.toDouble(),
+      total: json['total']?.toDouble(),
+      id: json['_id'],
+    );
+  }
+}
+
+class AddressInfo {
+  final String? id;
+  final String? consumerId;
+  final String? name;
+  final String? mobile;
+  final String? addressLine;
+  final String? addressName;
+  final String? addressType;
+  final bool? isDefault;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  AddressInfo({
+    this.id,
+    this.consumerId,
+    this.name,
+    this.mobile,
+    this.addressLine,
+    this.addressName,
+    this.addressType,
+    this.isDefault,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory AddressInfo.fromJson(Map<String, dynamic> json) {
+    return AddressInfo(
+      id: json['_id'],
+      consumerId: json['consumerId'],
+      name: json['name'],
+      mobile: json['mobile'],
+      addressLine: json['addressLine'],
+      addressName: json['addressName'],
+      addressType: json['addressType'],
+      isDefault: json['isDefault'],
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+    );
+  }
+}
+
+class StoreInfo {
+  final String? id;
+
+  StoreInfo({this.id});
+
+  factory StoreInfo.fromJson(Map<String, dynamic> json) {
+    return StoreInfo(
+      id: json['_id'],
+    );
+  }
+}
+
+class GetOrderHistory {
+  final String? id;
+  final String? consumerId;
+  final StoreInfo? storeId;
+  final AddressInfo? addressId;
+  final List<OrderItem>? items;
+  final double? totalAmount;
+  final String? paymentMode;
+  final String? paymentStatus;
+  final String? razorpayOrderId;
+  final String? razorpayPaymentId;
+  final String? razorpaySignature;
+  final String? orderStatus;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  GetOrderHistory({
+    this.id,
+    this.consumerId,
+    this.storeId,
+    this.addressId,
+    this.items,
+    this.totalAmount,
+    this.paymentMode,
+    this.paymentStatus,
+    this.razorpayOrderId,
+    this.razorpayPaymentId,
+    this.razorpaySignature,
+    this.orderStatus,
+    this.createdAt,
+    this.updatedAt,
+  });
+
   factory GetOrderHistory.fromJson(Map<String, dynamic> json) {
     return GetOrderHistory(
-      orderId: json['order_id'] as String?,
-      userId: json['user_id'] as String?,
-      subcategoryId: json['sub_category_id'] as String?,
-      count: json['count'] as int?,
-      bookingDate: json['booking_date'] != null
-          ? DateTime.tryParse(json['booking_date'])
+      id: json['_id'],
+      consumerId: json['consumerId'],
+      storeId: json['storeId'] != null ? StoreInfo.fromJson(json['storeId']) : null,
+      addressId: json['addressId'] != null ? AddressInfo.fromJson(json['addressId']) : null,
+      items: json['items'] != null
+          ? List<OrderItem>.from(json['items'].map((x) => OrderItem.fromJson(x)))
           : null,
-      slotSchedule: json['slot_schedule'] as String?,
-      startTime: json['start_time'] as String?,
-      endTime: json['end_time'] as String?,
-      oldPrice: (json['old_price'] as num?)?.toDouble(),
-      savings: (json['savings'] as num?)?.toDouble(),
-      gst: (json['gst'] as num?)?.toDouble(),
-      deliveryFees: (json['delivery_fees'] as num?)?.toDouble(),
-      totalPay: (json['total_pay'] as num?)?.toDouble(),
-      productName: json['product_name'] as String?,
-      productSubname: json['product_subname'] as String?,
-      productQuantity: json['product_quantity'] as String?,
-      currentPrice: (json['current_price'] as num?)?.toDouble(),
-      orderAddress: json['order_address'] as String?,
-      image: json['image'] as String?,
+      totalAmount: json['totalAmount']?.toDouble(),
+      paymentMode: json['paymentMode'],
+      paymentStatus: json['paymentStatus'],
+      razorpayOrderId: json['razorpayOrderId'],
+      razorpayPaymentId: json['razorpayPaymentId'],
+      razorpaySignature: json['razorpaySignature'],
+      orderStatus: json['orderStatus'],
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 }

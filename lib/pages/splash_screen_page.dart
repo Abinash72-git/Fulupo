@@ -126,7 +126,7 @@ class _SplashScreenState extends State<SplashScreen> {
     phoneNumber = prefs.getString(AppConstants.USERMOBILE) ?? '';
     selectedAddress = prefs.getString('SELECTED_ADDRESS') ?? '';
 
-    await _getCurrentLocation();
+   // await _getCurrentLocation();
 
     Timer(const Duration(seconds: 1), () async {
       bool isExpired = _isTokenExpired(token);

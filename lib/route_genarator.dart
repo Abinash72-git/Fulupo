@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fulupo/pages/allow_location_page.dart';
 import 'package:fulupo/pages/app_page.dart';
-import 'package:fulupo/pages/cart_page.dart';
+
 import 'package:fulupo/pages/delete_account.dart';
 import 'package:fulupo/pages/login_page.dart';
 import 'package:fulupo/pages/main_home_page.dart';
@@ -98,8 +98,7 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => MonthlySchedule());
       case AppRouteName.intro_privacy_page:
         return MaterialPageRoute(builder: (_) => IntroPage());
-      case AppRouteName.cartpage:
-      return MaterialPageRoute(builder: (_)=>CartPage())  ;
+
 
       case null:
         return MaterialPageRoute(

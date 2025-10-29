@@ -377,7 +377,8 @@ class _LoginState extends State<Login> {
                                 otpNo,
                               );
 
-                              AppDialogue.toast(resp.data);
+                              AppDialogue.toast(resp.data["message"] ?? "OTP sent successfully");
+
 
                               // Navigate to OTP page
                               AppRouteName.otp.push(

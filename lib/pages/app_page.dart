@@ -1,14 +1,15 @@
 import 'dart:developer';
 
-import 'package:fancy_bottom_navigation/fancy_bottom_navigation.dart';
+import 'package:fancy_bottom_navigation_2/fancy_bottom_navigation.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:fulupo/pages/cart/cartpage.dart';
-import 'package:fulupo/pages/cart_page.dart';
-import 'package:fulupo/pages/home_page.dart';
-import 'package:fulupo/pages/homepage2.dart';
+
+
+import 'package:fulupo/pages/homepage.dart';
 import 'package:fulupo/pages/subscription_pages/subscription_intro_page.dart';
 import 'package:fulupo/util/color_constant.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,11 +61,11 @@ class _AppPageState extends State<AppPage> {
       case 0:
         return Cartpage();
       case 1:
-        return HomePage2();
+        return HomePage();
       case 2:
         return SubscriptionIntroPage();
       default:
-        return HomePage2();
+        return HomePage();
     }
   }
 
@@ -80,7 +81,7 @@ class _AppPageState extends State<AppPage> {
     if (_currentIndex != 1 && _currentIndex != 0 && _currentIndex != 2) {
       setState(() {
         _currentIndex = 1; // Set this to your Home Page index
-        _currentPage = HomePage2();
+        _currentPage = HomePage();
       });
       return Future.value(false);
     } else {

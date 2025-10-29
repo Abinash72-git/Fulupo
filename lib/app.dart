@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fulupo/config/app_theme.dart';
 import 'package:fulupo/flavours.dart';
+import 'package:fulupo/pages/homepage.dart';
 import 'package:fulupo/pages/main_home_page.dart';
 import 'package:fulupo/pages/splash_screen_page.dart';
 import 'package:fulupo/provider/get_provider.dart';

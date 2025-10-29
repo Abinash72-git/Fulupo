@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fulupo/api/api_intergration.dart';
 import 'package:fulupo/config/app_config.dart';
@@ -17,6 +19,7 @@ import 'package:fulupo/model/getAll_categeory/getAll_subproduct_model/getAll_sub
 import 'package:fulupo/model/getWishlist_model.dart';
 import 'package:fulupo/model/order_history/getOrder_history.dart';
 import 'package:fulupo/model/random_product_model.dart';
+import 'package:fulupo/model/replacement_history/getReplacement_model.dart';
 import 'package:fulupo/model/subscription/getAll_subscription_model.dart';
 import 'package:fulupo/model/subscription/getAll_weekly_model.dart';
 import 'package:fulupo/model/subscription/getall_weekly_package_model.dart';
@@ -25,6 +28,8 @@ import 'package:fulupo/util/app_constant.dart';
 import 'package:fulupo/util/exception.dart';
 import 'package:fulupo/util/url_path.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GetProvider extends ChangeNotifier {
@@ -61,6 +66,8 @@ class GetProvider extends ChangeNotifier {
   List<GetallSubscriptionModel> _subscription = [];
   List<GetallWeeklyModel> _weeklySubscription = [];
   List<GetallWeeklyPackageModel> _weeklyPackage = [];
+ List<ReplacementResponse> _replacementList = [];
+ 
 
   //Getter
 
@@ -80,6 +87,7 @@ class GetProvider extends ChangeNotifier {
   List<GetallSubscriptionModel> get subscription => _subscription;
   List<GetallWeeklyModel> get weeklySubscription => _weeklySubscription;
   List<GetallWeeklyPackageModel> get weeklyPackage => _weeklyPackage;
+  List<ReplacementResponse> get replacementList => _replacementList;
 
   // BaseUrl
   final String baseUrl = '${AppConfig.instance.baseUrl}';
@@ -627,6 +635,74 @@ class GetProvider extends ChangeNotifier {
     }
   }
 
+// Future<APIResp> addAddress({
+//   required String name,
+//   required String phone,
+//   required String token,
+//   required String address,
+//   required String addressType,
+//   required String addAddressName,
+// }) async {
+//   final resp = await APIService.post(
+//     UrlPath.getUrl.addAddress,
+//     data: {
+//       "name": name,
+//       "mobile": phone,
+//       "addressLine": address,
+//       "addressType": addressType,
+//       "addressName": addAddressName,
+//     },
+//     showNoInternet: false,
+//     auth: true,
+//     forceLogout: false,
+//     console: true,
+//     timeout: const Duration(seconds: 30),
+//     headers: {},
+//   );
+
+//   print(resp.statusCode);
+//   print("siki----------------------->");
+//   print(resp.status);
+//   print("viki------------------>");
+
+//   if (resp.status) {
+//     isApiValidationError = false;
+
+//     // ✅ Extract address ID and save it locally
+//     try {
+//       final data = resp.fullBody;
+//       if (data != null && data is Map && data['addresses'] != null) {
+//         // Get the latest (most recent) address from list
+//         final List addresses = data['addresses'];
+//         if (addresses.isNotEmpty) {
+//           final latestAddress = addresses.last;
+//           final addressId = latestAddress['_id'];
+
+//           // ✅ Save in SharedPreferences
+//           final prefs = await SharedPreferences.getInstance();
+//           await prefs.setString(AppConstants.ADDRESS_ID, addressId);
+
+//           print("✅ Address ID saved locally: $addressId");
+//         }
+//       }
+//     } catch (e) {
+//       print("⚠️ Error saving address ID: $e");
+//     }
+
+//     return resp;
+//   } else if (!resp.status && resp.data == "Validation Error") {
+//     AppConstants.apiValidationModel = ApiValidationModel.fromJson(resp.fullBody);
+//     isApiValidationError = true;
+//     notifyListeners();
+//     return resp;
+//   } else {
+//     throw APIException(
+//       type: APIErrorType.auth,
+//       message: resp.data?.toString() ?? "Invalid credential. Please try again!",
+//     );
+//   }
+// }
+
 Future<APIResp> addAddress({
   required String name,
   required String phone,
@@ -636,7 +712,7 @@ Future<APIResp> addAddress({
   required String addAddressName,
 }) async {
   final resp = await APIService.post(
-    UrlPath.getUrl.addAddress,
+    UrlPath.postUrl.addAddress,
     data: {
       "name": name,
       "mobile": phone,
@@ -657,25 +733,22 @@ Future<APIResp> addAddress({
   print(resp.status);
   print("viki------------------>");
 
-  if (resp.status) {
+  // ✅ Treat message containing "success" as success even if resp.status is false
+  final bool isMessageSuccess = (resp.fullBody['message']?.toString().toLowerCase().contains('success') ?? false);
+
+  if (resp.status || isMessageSuccess) {
     isApiValidationError = false;
 
     // ✅ Extract address ID and save it locally
     try {
       final data = resp.fullBody;
-      if (data != null && data is Map && data['addresses'] != null) {
-        // Get the latest (most recent) address from list
-        final List addresses = data['addresses'];
-        if (addresses.isNotEmpty) {
-          final latestAddress = addresses.last;
-          final addressId = latestAddress['_id'];
+      if (data != null && data is Map && data['address'] != null) {
+        final addressId = data['address']['_id'];
 
-          // ✅ Save in SharedPreferences
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(AppConstants.ADDRESS_ID, addressId);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(AppConstants.ADDRESS_ID, addressId);
 
-          print("✅ Address ID saved locally: $addressId");
-        }
+        print("✅ Address ID saved locally: $addressId");
       }
     } catch (e) {
       print("⚠️ Error saving address ID: $e");
@@ -696,6 +769,7 @@ Future<APIResp> addAddress({
 }
 
 
+//new
   Future<void> fetchOrderAddress(String token) async {
     try {
       final String endpoint = UrlPath.getUrl.getAddress;
@@ -731,6 +805,41 @@ Future<APIResp> addAddress({
       rethrow;
     }
   }
+// // new for delete a address
+// Future<APIResp> deleteOrderAddress({
+//   required String addressId,
+//   required String token,
+// }) async {
+//   try {
+//     final String endpoint = "${UrlPath.deleteUrl.deleteAddress}/$addressId";
+
+//     final response = await APIService.delete(
+//       endpoint,
+//       headers: {
+//         'Authorization': 'Bearer $token',
+//         'Content-Type': 'application/json',
+//       },
+//     );
+
+//     log("🗑️ Delete Response: ${response.fullBody}");
+
+//     if (response.statusCode == 200 || response.statusCode == 201) {
+//       // Success
+//       await fetchOrderAddress(token); // Refresh list after delete
+//       notifyListeners();
+//       return APIResp(status: true, data: "Address deleted successfully");
+//     } else {
+//       return APIResp(
+//         status: false,
+//         data: "Failed to delete address (${response.statusCode})",
+//       );
+//     }
+//   } catch (e) {
+//     log("❌ Error deleting address: $e");
+//     return APIResp(status: false, data: "Error deleting address");
+//   }
+// }
+
 
   //Get all Order Address-------------------------------------
   // Future<void> fetchOrderAddress(String token) async {
@@ -1734,7 +1843,6 @@ Future<APIResp> addAddress({
   }
 
 //Orders
-
 Future<APIResp> createOrder({
   required String storeId,
   required String addressId,
@@ -1760,7 +1868,7 @@ Future<APIResp> createOrder({
     log('Create Order data: $data');
     
     final resp = await APIService.post(
-      UrlPath.postUrl.createOrder, // Update with your actual endpoint
+      UrlPath.postUrl.createOrder,
       data: jsonEncode(data),
       params: {},
       console: true,
@@ -1779,29 +1887,356 @@ Future<APIResp> createOrder({
     log("Response Data------------------>");
     log("${resp.data}");
     
-    // Check for success
+    // Check for success based on status code AND presence of order object
     if (resp.statusCode == 200) {
+      // Check if response contains 'order' object (indicates success)
+      if (resp.fullBody != null && resp.fullBody['order'] != null) {
+        String message = resp.fullBody['message'] ?? "Order created successfully";
+        log("✅ Order creation successful: $message");
+        
+        return APIResp(
+          status: true,
+          statusCode: resp.statusCode,
+          data: message,
+          fullBody: resp.fullBody,
+        );
+      } else {
+        // 200 but no order object means something went wrong
+        String errorMessage = resp.fullBody?['message'] ?? "Error creating order.";
+        log("❌ Order creation failed: $errorMessage");
+        
+        return APIResp(
+          status: false,
+          statusCode: resp.statusCode ?? 500,
+          data: errorMessage,
+          fullBody: resp.fullBody,
+        );
+      }
+    } else {
+      // Non-200 status code
+      String errorMessage = "Error creating order.";
+      
+      if (resp.data is Map) {
+        final dataMap = resp.data as Map<String, dynamic>;
+        errorMessage = dataMap['message'] ?? dataMap['error'] ?? errorMessage;
+      } else if (resp.data is String) {
+        errorMessage = resp.data;
+      }
+      
+      log("❌ Order creation failed: $errorMessage");
+      
       return APIResp(
-        status: true,
-        statusCode: resp.statusCode,
-        data: "Order created successfully",
+        status: false,
+        statusCode: resp.statusCode ?? 500,
+        data: errorMessage,
         fullBody: resp.fullBody,
       );
-    } else {
-      throw APIException(
-        type: APIErrorType.auth,
-        message: resp.data?.toString() ?? "Error creating order.",
-      );
     }
+  } on APIException catch (e) {
+    log("❌ APIException in createOrder: ${e.message}");
+    return APIResp(
+      status: false,
+      statusCode: 500,
+      data: e.message ?? "Failed to create order",
+      fullBody: null,
+    );
   } catch (e) {
     log("❌ Exception in createOrder: $e");
     return APIResp(
       status: false,
       statusCode: 500,
-      data: "Failed to create order: $e",
+      data: "Failed to create order: ${e.toString()}",
       fullBody: null,
     );
   }
 }
 
+Future<APIResp> verifyPayment({
+  required String razorpayOrderId,
+  required String razorpayPaymentId,
+  required String razorpaySignature,
+  String? orderId,
+}) async {
+  log("--------------------- enter verifyPayment");
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString(AppConstants.token);
+
+  try {
+    final data = {
+      "razorpay_order_id": razorpayOrderId,
+      "razorpay_payment_id": razorpayPaymentId,
+      "razorpay_signature": razorpaySignature,
+      // Add orderId only if provided and not empty
+      if (orderId != null && orderId.isNotEmpty) "orderId": orderId,
+    };
+    
+    log('Verify Payment data: $data');
+    
+    final resp = await APIService.post(
+      UrlPath.postUrl.verifyOrder,
+      data: jsonEncode(data),
+      params: {},
+      console: true,
+      auth: true,
+      showNoInternet: false,
+      forceLogout: false,
+      timeout: const Duration(seconds: 30),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+    
+    log("Verify Payment Response: ${resp.statusCode}");
+    log("${resp.data}");
+    
+    // For 200 status code, we need to check the response content
+    if (resp.statusCode == 200) {
+      // Check if response contains success indicators
+      if (resp.fullBody != null) {
+        final dynamic fullBody = resp.fullBody;
+        
+        // Check for success message in the response
+        if (fullBody is Map) {
+          final message = fullBody['message'];
+          if (message != null && message.toString().toLowerCase().contains("success")) {
+            // Success case
+            return APIResp(
+              status: true,
+              statusCode: resp.statusCode,
+              data: message,
+              fullBody: fullBody,
+            );
+          }
+        }
+      }
+    }
+    
+    // If we reach here, either it's not a 200 response or success indicators weren't found
+    String errorMessage = "Payment verification failed";
+    if (resp.fullBody is Map && resp.fullBody['message'] != null) {
+      errorMessage = resp.fullBody['message'];
+    }
+    
+    return APIResp(
+      status: false,
+      statusCode: resp.statusCode ?? 500,
+      data: errorMessage,
+      fullBody: resp.fullBody,
+    );
+  } catch (e) {
+    log("❌ Exception in verifyPayment: $e");
+    return APIResp(
+      status: false,
+      statusCode: 500,
+      data: "Failed to verify payment: ${e.toString()}",
+      fullBody: null,
+    );
+  }
+
 }
+
+
+Future<APIResp> getOrderHistory() async {
+  print("--------------------- enter orderHistory");
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString(AppConstants.token);
+  print("Using token for orderHistory: $token");
+
+  try {
+    final resp = await APIService.get(
+      UrlPath.getUrl.getOrderHistory,
+      params: {},
+      console: true,
+      auth: true,
+      showNoInternet: false,
+      forceLogout: false,
+      timeout: const Duration(seconds: 30),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      data: null,
+    );
+
+    print("Response Status Code: ${resp.statusCode}");
+    print("Response Data------------------>");
+    print(resp.data);
+
+    if (resp.statusCode == 200) {
+      if (resp.fullBody != null) {
+        // Get count from the response
+        
+        // Get orders array from the response
+        List<dynamic> ordersJsonList = resp.fullBody['orders'] ?? [];
+        List<GetOrderHistory> orderHistory = ordersJsonList
+            .map((e) => GetOrderHistory.fromJson(e))
+            .toList();
+
+        /// Store orders in provider for UI use
+        _orderHistory = orderHistory;
+        notifyListeners();
+
+        return APIResp(
+          status: true,
+          statusCode: resp.statusCode,
+          data: orderHistory,
+          fullBody: resp.fullBody,
+        );
+      } else {
+        throw APIException(
+          type: APIErrorType.internalServerError,
+          message: "Empty response received",
+        );
+      }
+    } else {
+      throw APIException(
+        type: APIErrorType.auth,
+        message: resp.data?.toString() ?? "Error fetching orderHistory.",
+      );
+    }
+  } catch (e) {
+    print("❌ Exception in orderHistory: $e");
+    return APIResp(
+      status: false,
+      statusCode: 500,
+      data: null,
+      fullBody: null,
+    );
+  }
+}
+
+// Replacement
+
+Future<APIResp> createReplacement({
+  required String orderId,
+  required String productId,
+  required String reason,
+  required String quantity,
+  required List<File> images,
+}) async {
+  log("--------------------- enter createReplacement");
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString(AppConstants.token);
+  log("Using token for createReplacement: $token");
+
+  try {
+    FormData formData = FormData();
+    
+    formData.fields.addAll([
+      MapEntry('orderId', orderId),
+      MapEntry('productId', productId),
+      MapEntry('reason', reason),
+      MapEntry('quantity', quantity),
+    ]);
+    
+
+    for (int i = 0; i < images.length; i++) {
+      File image = images[i];
+      String fileName = '${DateTime.now().millisecondsSinceEpoch}_${i}_${image.path.split('/').last}';
+      
+
+      MultipartFile multipartFile = await MultipartFile.fromFile(
+        image.path,
+        filename: fileName,
+        contentType: MediaType('image', 'jpeg'),
+      );
+      
+
+      formData.files.add(MapEntry('images', multipartFile));
+    }
+    
+
+    Map<String, String> headers = {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    };
+    
+
+    final resp = await APIService.post(
+      UrlPath.postUrl.createReplacement,
+      data: formData,
+      console: true,
+      auth: true,
+      showNoInternet: true,
+      forceLogout: false,
+      timeout: const Duration(seconds: 60),
+      headers: headers,
+    );
+
+    log("Response Status Code: ${resp.statusCode}");
+    log("Response Data: ${resp.data}");
+
+    return resp;
+  } catch (e) {
+    log("❌ Exception in createReplacement: $e");
+    return APIResp(
+      status: false,
+      statusCode: 500,
+      data: "Failed to submit replacement request: $e",
+      fullBody: null,
+    );
+  }
+}
+//get
+
+Future<void> fetchReplacementList({
+  required String token,
+  required String customerId,
+}) async {
+  final ApiIntegration api = ApiIntegration();
+  await getdata();
+
+  isLoading = true;
+  notifyListeners();
+
+  try {
+    // ✅ Construct the complete API URL
+    final String endpoint = '${UrlPath.getUrl.getReplacement}/$customerId';
+
+    // ✅ Call the API using your APIService
+    final APIResp resp = await APIService.get(
+      endpoint,
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    // ✅ Handle the API response
+    if (resp.status && resp.data != null) {
+      // The data is a Map, not a List
+      final Map<String, dynamic> responseData = resp.data as Map<String, dynamic>;
+      
+      // Create a single ReplacementResponse from the map
+      final ReplacementResponse replacementResponse = ReplacementResponse.fromJson(responseData);
+      
+      // Store in a list with a single item
+      _replacementList = [replacementResponse];
+      
+      isApiValidationError = false;
+      print('✅ Replacement list fetched successfully!');
+      log('✅ Replacement list fetched successfully!');
+    } else {
+      print('⚠️ Failed to fetch replacement list: ${resp.data}');
+      isApiValidationError = true;
+    }
+  } catch (error) {
+    print('❌ Error fetching replacement list: $error');
+    log('❌ Error fetching replacement list: $error');
+    isApiValidationError = true;
+  } finally {
+    isLoading = false;
+    notifyListeners();
+  }
+}
+
+
+
+}
+
+

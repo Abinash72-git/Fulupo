@@ -36,10 +36,15 @@ class AppConstants {
   static const String USERLATITUTE = 'user_latitude';
   static const String USERLONGITUTE = 'user_longitude';
   static const String USERADDRESS = 'user_address';
-  static const String ADDRESS_TYPE='SELECTED_ADDRESS_TYPE';
-  static const String ADDRESS_NAME='SELECTED_FLAT_HOUSE_NO';
+  static const String ADDRESS_TYPE='select_addressType';
+  static const String ADDRESS_NAME='select_flat_house_no';
   static const String ADDRESS_ID ='savedAddressId';
+  static const String DEV_USERNAME ='delivery_username';
 
+  //temp address
+  static const String TEMP_USERLATITUTE = 'tempuser_latitude';
+  static const String TEMP_USERLONGITUTE = 'tempuser_longitude';
+  static const String TEMP_USERADDRESS = 'tempuser_address';
 
   static const String USERNAME = 'user_name';
   static const String USEREMAIL='user_mail';
@@ -48,10 +53,7 @@ class AppConstants {
   static const String StoreCode = 'PRIMARY_STORE';
 static const String IS_EXISTING_USER = 'is_existing_user';
 
-// Add these to AppConstants
-static const String KEY_SELECTED_ADDRESS_TYPE = 'SELECTED_ADDRESS_TYPE'; // Home, Work, Others
-static const String KEY_SELECTED_ADDRESS_NAME = 'SELECTED_ADDRESS_NAME'; // Custom name for "Others"
-static const String KEY_SELECTED_ADDRESS_FULL = 'SELECTED_ADDRESS_FULL'; // Full address text
+
 
 
   static var imei;
